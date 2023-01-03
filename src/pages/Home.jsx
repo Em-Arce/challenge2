@@ -8,7 +8,7 @@ import { addDoc, collection, doc,
 export default function Home() {
   const reference = collection(firestore, "counts");
 
-  const [currentValue, setCurrentValue] = useState("");
+  const [currentValue, setCurrentValue] = useState(0);
 
   window.addEventListener( "load", () => {
     fetchCurrentDatum();
@@ -28,7 +28,7 @@ export default function Home() {
       setCurrentValue(data);
   });
 
-  const [counter, setCounter] = useState(0);
+  const [counter, setCounter] = useState(currentValue);
   // console.log(counter)
   const increment = () => {
     setCounter(count => count + 1);
@@ -48,7 +48,7 @@ export default function Home() {
 
   const handleSave = async (e) => {
     e.preventDefault();
-    console.log(counter);
+    // console.log(counter);
     alert("Counter saved")
     try {
       addDoc(reference, data);
@@ -57,15 +57,12 @@ export default function Home() {
     }
   };
 
-  
-
   //https://www.youtube.com/watch?v=7aDG3L-bTS8
   // TODO: getalldata, then try orderby and limit
 
   return (
     <div>
-      
-      <h2>Current Value: {currentValue}</h2>
+      <h2>Current Value from DB: {currentValue}</h2>
       <h2>Counter Value: {counter}</h2>
       <button onClick={increment}>+</button> <br></br>
       <button onClick={decrement}>-</button> <br></br>
