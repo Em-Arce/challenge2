@@ -1,108 +1,88 @@
 import React from "react";
-import { useState, useEffect, useRef } from "react"; 
+import { useState, useEffect } from "react"; 
 import { firestore } from "../firebase";
-import { addDoc, collection, doc, 
-  query, orderBy, onSnapshot 
+import { 
+  addDoc, 
+  collection, 
+  doc, 
+  getDocs, 
+  updateDoc,
+  deleteDoc
 } from "@firebase/firestore";
 
 export default function Home() {
-  // const reference = collection(firestore, "counts");
-
-  // const [inputValue, setInputValue] = useState(0);
-  const [currentValue, setCurrentValue] = useState(0);
-  // const [counter, setCounter] = useState(0);
+  const [newCount, setNewCount] = useState(0);
+  const [currentValue, setCurrentValue] = useState([]);
+  const countsRef = collection(firestore, "counts");
   
-  // let counter = useRef(currentValue);
+  // on refresh get counts from db once
+  useEffect(() => {
+    const getCounts = async () => {
+      const data = await getDocs(countsRef);
+      setCurrentValue(data.docs.map((doc) => ({...doc.data(), id: doc.id })));
+    };
+    getCounts();
+  }, []);
   
-
-
-  // fetch data from firebase
-  window.addEventListener( "load", () => {
-    fetchCurrentDatum();
-  });
-
-  const fetchCurrentDatum = doc(firestore, "counts", "UqUyiscWk2f8Dy8OrJYW");
-  
-  onSnapshot(fetchCurrentDatum, (doc) => {
-      // console.log(doc.data(), doc.id);
-      var data = doc.data().currentCount;
-      setCurrentValue(data);
-  });
-  // console.log(`current value ${currentValue}`);
-  const [counter, setCounter] = useState(currentValue);
-  // console.log(`counter value ${counter}`);
-
-  // set the current counter to currentValue
-  // useEffect(() => {
-  //   counter.current = currentValue;
-  //   // eslint-disable-next-line
-  // }, [currentValue]);
-
-  // useEffect(()=> {
-  //   increment();
-  //   decrement();
-  //   reset();
-  // // eslint-disable-next-line
-  // }, [counter.current]);
-
-
-  // console.log(counter)
-  
-  const increment = () => {
-    // console.log(`before increment current value ${counter}`);
-    setCounter(counter + 1);
-    // console.log(`after increment current value ${counter}`);
+  const addCount = async () => {
+    await addDoc(countsRef, { currentCount: Number(newCount)});
   };
 
-  const decrement = () => {
-    // console.log(`before decrement current value ${counter}`);
-    setCounter(counter - 1);
-    // console.log(`after decrement current value ${counter}`);
+  const deleteCount = async (id) => {
+    const countDoc = doc(firestore, "counts", id);
+    await deleteDoc(countDoc);
   };
 
-  const reset = () => {
-    // console.log(`before reset current value ${counter}`);
-    setCounter(0)
-    // console.log(`after reset current value ${counter}`);
+  // increase counter by 1 and save to db
+  const increment = async (id, currentCount) => {
+    // console.log(`id: ${id}, currentCount: ${currentCount}`);
+    const countDoc = doc(firestore, "counts", id);
+    const newFields = { currentCount: currentCount + 1 };
+    await updateDoc(countDoc, newFields);
   };
 
-  
-  // let data = {
-  //   currentCount: inputValue,
-  // }
+  const decrement = async (id, currentCount) => {
+    // console.log(`id: ${id}, currentCount: ${currentCount}`);
+    const countDoc = doc(firestore, "counts", id);
+    const newFields = { currentCount: currentCount - 1 };
+    await updateDoc(countDoc, newFields);
+  };
 
-  // make this into update instead of save new entry
-  // const handleSave = async (e) => {
-  //   e.preventDefault();
-  //   // console.log(counter);
-  //   alert("Counter saved")
-  //   try {
-  //     addDoc(reference, data);
-  //   } catch(error) {
-  //     console.log(error);
-  //   }
-  // };
-
-  //https://www.youtube.com/watch?v=7aDG3L-bTS8
-  // TODO: getalldata, then try orderby and limit
+  const reset = async (id) => {
+    const countDoc = doc(firestore, "counts", id);
+    const newFields = { currentCount: 0 };
+    await updateDoc(countDoc, newFields);
+  };
 
   return (
     <div>
-      <h2>Previous Value from DB: {currentValue}</h2>
-      <h2>Counter Value: {counter}</h2>
-      <button onClick={increment}>+</button> <br></br>
-      <button onClick={decrement}>-</button> <br></br>
-      <button onClick={reset}>Reset</button>
-      {/* <form onSubmit={handleSave}>
-        <label>Input:</label>
-        <input 
-          type="number" 
-          value={inputValue}
-          onChange={
-            (e) => (setInputValue(e.target.value))
-          } /><br></br>
-        <button type="submit">Save</button>
-      </form> */}
+      <input type="number"
+        placeholder="Enter a number"
+        onChange={(event) => {setNewCount(event.target.value)}}
+      />
+      <button onClick={addCount}>Add Count</button>
+
+      <h1>All Counts</h1>
+      {currentValue.map((count) => {
+        return (
+          <div key={count.id}>
+            <h3> Counter: {count.currentCount}</h3>
+            <button onClick={() => {
+              increment(count.id, count.currentCount)
+            }}>{" "} Increase</button>
+            <button onClick={() => {
+              decrement(count.id, count.currentCount)
+            }}>{" "} Decrease</button>
+            <button onClick={() => {
+              reset(count.id)
+            }}>{" "} Reset</button>
+            <button onClick={() => {
+              deleteCount(count.id)
+            }}>{" "} Delete Count</button>
+          </div>
+        );
+      })
+      }
     </div>
   );
 }
